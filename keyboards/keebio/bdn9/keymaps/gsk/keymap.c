@@ -16,9 +16,11 @@
  *
  */
 #include QMK_KEYBOARD_H
-#include <quantum/rgblight.h>
 #include "process_tap_hold.h"
+#include "rgb_matrix_kb.inc"
 #define LS_TAB LSFT(KC_TAB) // Shift-TAB
+
+//RGB_MATRIX_EFFECT(party_size_check)
 
 enum custom_keycodes {
     SOME_KEYCODE = SAFE_RANGE,
@@ -39,46 +41,44 @@ uint16_t QK_TAP_HOLD = _QK_TAP_HOLD;
 // and ACTION_TAP_HOLD(KC_TAP, KC_HOLD)
 int party_size = 1;
 
-void party_size_check(int party_size_param) {
-//    if (party_size > 1) {
-    rgblight_sethsv_at(HSV_BLUE, 1);
-    if (party_size_param < 8) {
-//            ffxiv_led = RGBLIGHT_LAYER_SEGMENTS(
-//                {1, 1, HSV_RED},
-//                {3, (party_size - 1), HSV_RED}
-//            );
-
-        rgblight_sethsv_range(HSV_BLUE, 3, party_size_param - 1);
-    } else {
-        rgblight_sethsv_range(HSV_GREEN, 0, 9);
-//            ffxiv_led = RGBLIGHT_LAYER_BLINK(
-//                {1, 1, HSV_RED},
-//                {3, 6, HSV_RED}
-//            );
+//rgb_matrix_set_flags(LED_FLAG_KEYLIGHT | LED_FLAG_MODIFIER | LED_FLAG_INDICATOR);
+void set_rgb_range_blue(int start, int end) {
+    int i = start;
+    while (i < end) {
+        i++;
+        rgb_matrix_set_color(i, 0x00, 0x00, 0xFF);
     }
-//    } else {
-//        ffxiv_led = RGBLIGHT_LAYER_SEGMENTS(
-//            {1,1, HSV_RED}
-//        );
-//    }
+}
+
+void set_rgb_board_green(void) {
+    int i = 0;
+    while (i < 9) {
+        i++;
+        rgb_matrix_set_color(i, 0x00, 0x00, 0xFF);
+    }
+}
+
+void party_size_check(int party_size_param) {
+    rgb_matrix_set_color(1, 0x00, 0x00, 0xFF);
+    if (party_size_param < 8) {
+        set_rgb_range_blue(3, party_size_param + 2);
+    } else {
+        set_rgb_board_green();
+    }
 }
 
 void update_party_size (void) {
-//    if (record->event.pressed) {
-        if (party_size == 8) {
-            party_size = 1;
-        } else {
-            party_size = party_size + 1;
-        }
-//    }
+    if (party_size == 8) {
+        party_size = 1;
+    } else {
+        party_size = party_size + 1;
+    }
 }
 
 void display_party_size (void) {
-//    if (record->event.pressed) {
-        party_size_check(party_size);
-//    } else {
-//        rgblight_toggle();
-//    }
+    #ifdef RGB_MATRIX_ENABLE
+        rgb_matrix_indicators_kb()
+    #endif
 }
 
 tap_hold_action_t tap_hold_actions[] = {
@@ -100,68 +100,19 @@ void matrix_scan_user(void) {
     matrix_scan_tap_hold(); // Place this function call here
 }
 
-//enum layer_names {
-//    0 = 0,
-//    1 = 1,
-//    2 = 2
-//};
-
 enum encoder_names {
     _LEFT,
     _RIGHT,
     _MIDDLE,
 };
-
-//rgblight_segment_t default_ffxiv_led =
-//
-//rgblight_segment_t ffxiv_led = default_ffxiv_led;
-
-// Light LEDs 6 to 9 and 12 to 15 red when caps lock is active. Hard to ignore!
-const rgblight_segment_t PROGMEM default_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-{RGBLIGHT_EFFECT_BREATHING}
-);
-// Light LEDs 9 & 10 in cyan when keyboard layer 1 is active
-const rgblight_segment_t PROGMEM ffxiv_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-{RGBLIGHT_EFFECT_STATIC_GRADIENT}
-);
-
-const rgblight_segment_t PROGMEM intellij_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    {0, 9, HSV_PURPLE}
-);
-
-// etc..
-//make a switch case
 uint8_t functionKeys[8] = {KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8};
 int target = 0;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     process_record_tap_hold(keycode, record);
-    switch (keycode) {
-        case UPDATE_PARTY_SIZE:
-
-            break;
-        case DISPLAY_PARTY_SIZE:
-//            if (record->event.pressed) {
-//                party_size_check(party_size);
-//            } else {
-//                rgblight_toggle();
-//            }
-            break;
-    }
     return true;
 };
 
-// Now define the array of layers. Later layers take precedence
-const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
-    default_layer,
-    ffxiv_layer,    // Overrides caps lock layer
-    intellij_layer     // Overrides other layers
-);
-
-void keyboard_post_init_user(void) {
-    // Enable the LED layers
-//    rgblight_layers = my_rgb_layers;
-}
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /*
         | Mute (Vol Dn/Up) |  Toggle layer 1   | Knob 2: Page Dn/Up |
@@ -249,4 +200,8 @@ void encoder_update_user(uint8_t index, bool clockwise) {
     } else if (index == _RIGHT) {
         right_rotary_encoder(clockwise);
     }
+}
+
+void rgb_matrix_indicators_kb(void) {
+    party_size_check(party_size);
 }

@@ -77,6 +77,8 @@ void tap(uint16_t keycode) {
     int macroIndex = find_keycode_in_array(keycode, QK_TAP_HOLD_MACROS);
     if (macroIndex >= 0) {
         QK_TAP_HOLD_MACRO_FUNCTIONS[macroIndex]();
+        send_keyboard_report();
+        return;
     } else if ((keycode & QK_RSFT) == QK_RSFT) {
         mods |= MOD_BIT(KC_RSFT);
     } else if ((keycode & QK_LSFT) == QK_LSFT) {
