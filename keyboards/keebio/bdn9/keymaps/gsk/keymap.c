@@ -31,6 +31,13 @@ enum custom_keycodes {
     _QK_TAP_HOLD
 };
 
+//enum led_commands {
+//    LED_PARTY_SIZE,
+//    LED_PLAYER_SELECT
+//};
+
+//uint8_t selected_led_command = LED_PLAYER_SELECT;
+
 // Place this below the custom keycodes
 uint16_t QK_TAP_HOLD = _QK_TAP_HOLD;
 #define TH(n) (_QK_TAP_HOLD + n)
@@ -40,12 +47,18 @@ uint16_t QK_TAP_HOLD = _QK_TAP_HOLD;
 // ACTION_TAP_HOLD_SHIFT(KC_TAP, KC_HOLD, KC_TAP_SHIFT, KC_HOLD_SHIFT)
 // and ACTION_TAP_HOLD(KC_TAP, KC_HOLD)
 int party_size = 1;
+int active_player_led_indices[8] = {1, 3, 4, 5, 6, 7, 8, 9};
+int target = 0;
 
 //rgb_matrix_set_flags(LED_FLAG_KEYLIGHT | LED_FLAG_MODIFIER | LED_FLAG_INDICATOR);
 void set_rgb_range_blue(int start, int end) {
     int i = start;
     while (i < end) {
-        rgb_matrix_set_color(i, 0x00, 0x00, 0xFF);
+        if (i == active_player_led_indices[target]) {
+            rgb_matrix_set_color(i, 0xFF, 0xFF, 0x00);
+        } else {
+            rgb_matrix_set_color(i, 0x00, 0x00, 0xFF);
+        }
         i++;
     }
 }
@@ -53,13 +66,21 @@ void set_rgb_range_blue(int start, int end) {
 void set_rgb_board_green(void) {
     int i = 0;
     while (i < 9) {
-        rgb_matrix_set_color(i, 0x00, 0xFF, 0x00);
+        if (i == active_player_led_indices[target]) {
+            rgb_matrix_set_color(i, 0xFF, 0xFF, 0x00);
+        } else {
+            rgb_matrix_set_color(i, 0x00, 0xFF, 0x00);
+        }
         i++;
     }
 }
 
 void party_size_check(int party_size_param) {
-    rgb_matrix_set_color(1, 0x00, 0x00, 0xFF);
+    if (target == 0) {
+        rgb_matrix_set_color(1, 0xFF, 0xFF, 0x00);
+    } else {
+        rgb_matrix_set_color(1, 0x00, 0x00, 0xFF);
+    }
     if (party_size_param < 8) {
         set_rgb_range_blue(3, party_size_param + 2);
     } else {
@@ -75,8 +96,13 @@ void update_party_size (void) {
     }
 }
 
+void player_select (void) {
+    rgb_matrix_set_color(active_player_led_indices[target], 0xFF, 0xFF, 0x00);
+}
+
 void display_party_size (void) {
     #ifdef RGB_MATRIX_ENABLE
+//        selected_led_command = LED_PARTY_SIZE;
         rgb_matrix_indicators_kb();
     #endif
 }
@@ -106,7 +132,6 @@ enum encoder_names {
     _MIDDLE,
 };
 uint8_t functionKeys[8] = {KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8};
-int target = 0;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     process_record_tap_hold(keycode, record);
@@ -203,5 +228,5 @@ void encoder_update_user(uint8_t index, bool clockwise) {
 }
 
 void rgb_matrix_indicators_kb(void) {
-    party_size_check(party_size);
+        party_size_check(party_size);
 }

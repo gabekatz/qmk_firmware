@@ -135,22 +135,4 @@ void process_record_tap_hold(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-//void process_record_tap_hold_macro(uint16_t keycode, keyrecord_t *record) {
-//    if (QK_TAP_HOLD <= keycode && keycode <= QK_TAP_HOLD_MAX) {
-//        uint16_t idx = keycode - QK_TAP_HOLD;
-//        if ((int16_t)idx > highest_th) {
-//            highest_th = idx;
-//        }
-//        tap_hold_action_t *t = &tap_hold_actions[idx];
-//        if (record->event.pressed) {
-//            t->timer = timer_read();
-//            t->timer_active = true;
-//        } else {
-//            if (timer_elapsed(t->timer) < TAP_HOLD_DELAY) {
-//                selectAndSendKey(t, false);
-//            }
-//        }
-//    }
-//}
-
 #endif
