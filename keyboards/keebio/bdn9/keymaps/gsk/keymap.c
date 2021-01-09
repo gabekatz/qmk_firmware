@@ -16,8 +16,8 @@
  *
  */
 #include QMK_KEYBOARD_H
+
 #include "process_tap_hold.h"
-#include "rgb_matrix_kb.inc"
 #define LS_TAB LSFT(KC_TAB) // Shift-TAB
 
 //RGB_MATRIX_EFFECT(party_size_check)
@@ -45,16 +45,16 @@ int party_size = 1;
 void set_rgb_range_blue(int start, int end) {
     int i = start;
     while (i < end) {
-        i++;
         rgb_matrix_set_color(i, 0x00, 0x00, 0xFF);
+        i++;
     }
 }
 
 void set_rgb_board_green(void) {
     int i = 0;
     while (i < 9) {
+        rgb_matrix_set_color(i, 0x00, 0xFF, 0x00);
         i++;
-        rgb_matrix_set_color(i, 0x00, 0x00, 0xFF);
     }
 }
 
@@ -77,7 +77,7 @@ void update_party_size (void) {
 
 void display_party_size (void) {
     #ifdef RGB_MATRIX_ENABLE
-        rgb_matrix_indicators_kb()
+        rgb_matrix_indicators_kb();
     #endif
 }
 
