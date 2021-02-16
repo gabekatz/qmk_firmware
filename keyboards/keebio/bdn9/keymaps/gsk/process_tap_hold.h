@@ -24,8 +24,8 @@ typedef struct tap_hold_action_t {
 typedef void (*func_type)(void);
 
 extern tap_hold_action_t tap_hold_actions[];
-extern uint16_t QK_TAP_HOLD_MACROS[];
-extern func_type QK_TAP_HOLD_MACRO_FUNCTIONS[];
+//extern uint16_t QK_TAP_HOLD_MACROS[];
+//extern func_type QK_TAP_HOLD_MACRO_FUNCTIONS[];
 
 // QK_TAP_HOLD and QK_TAP_HOLD_MAX should be defined in the enum
 // quantum_keycodes at qmk_firmware/quantum/quantum_keycodes.h
@@ -59,12 +59,12 @@ void matrix_scan_tap_hold(void) {
 }
 
 //TODO either make the array size dynamic or keep updating whenever you add a macro
-int find_keycode_in_array (uint16_t keycode, uint16_t array[2]) {
-    int i = 0;
-    while ( i < 2 && array[i] != keycode ) i++;
-
-    return i == 2 ? -1 : i;
-}
+//int find_keycode_in_array (uint16_t keycode, uint16_t array[2]) {
+//    int i = 0;
+//    while ( i < 2 && array[i] != keycode ) i++;
+//
+//    return i == 2 ? -1 : i;
+//}
 
 void tap(uint16_t keycode) {
     if (keycode == KC_NO) {
@@ -74,12 +74,13 @@ void tap(uint16_t keycode) {
     uint8_t prev_mods = get_mods();
     uint8_t mods = 0;
 
-    int macroIndex = find_keycode_in_array(keycode, QK_TAP_HOLD_MACROS);
-    if (macroIndex >= 0) {
-        QK_TAP_HOLD_MACRO_FUNCTIONS[macroIndex]();
-        send_keyboard_report();
-        return;
-    } else if ((keycode & QK_RSFT) == QK_RSFT) {
+//    int macroIndex = find_keycode_in_array(keycode, QK_TAP_HOLD_MACROS);
+//    if (macroIndex >= 0) {
+//        QK_TAP_HOLD_MACRO_FUNCTIONS[macroIndex]();
+//        send_keyboard_report();
+//        return;
+//    } else
+    if ((keycode & QK_RSFT) == QK_RSFT) {
         mods |= MOD_BIT(KC_RSFT);
     } else if ((keycode & QK_LSFT) == QK_LSFT) {
         mods |= MOD_BIT(KC_LSFT);

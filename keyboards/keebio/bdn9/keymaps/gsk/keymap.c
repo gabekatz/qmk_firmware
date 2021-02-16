@@ -19,24 +19,22 @@
 
 #include "process_tap_hold.h"
 #define LS_TAB LSFT(KC_TAB) // Shift-TAB
-
-//RGB_MATRIX_EFFECT(party_size_check)
+#define LS_F LSFT(KC_F) // Shift-F
+#define LS_F13 LSFT(KC_F13) // Shift-F13
+#define LS_F14 LSFT(KC_F14) // Shift-F14
 
 enum custom_keycodes {
     SOME_KEYCODE = SAFE_RANGE,
-    UPDATE_PARTY_SIZE,
-    DISPLAY_PARTY_SIZE,
-    PARTY_SIZE_HOLD_TAP,
+    SELECT_TARGET_PLAYER,
+    SET_FOCUS,
+    SELECT_FOCUS,
     HOME_END_HOLD_TAP,
+    LAYER_SET_0,
+    LAYER_SET_1,
+    LAYER_SET_2,
+    LAYER_SET_3,
     _QK_TAP_HOLD
 };
-
-//enum led_commands {
-//    LED_PARTY_SIZE,
-//    LED_PLAYER_SELECT
-//};
-
-//uint8_t selected_led_command = LED_PLAYER_SELECT;
 
 // Place this below the custom keycodes
 uint16_t QK_TAP_HOLD = _QK_TAP_HOLD;
@@ -49,8 +47,8 @@ uint16_t QK_TAP_HOLD = _QK_TAP_HOLD;
 int party_size = 1;
 int active_player_led_indices[8] = {1, 3, 4, 5, 6, 7, 8, 9};
 int target = 0;
+int focus_target = -1;
 
-//rgb_matrix_set_flags(LED_FLAG_KEYLIGHT | LED_FLAG_MODIFIER | LED_FLAG_INDICATOR);
 void set_rgb_range_blue(int start, int end) {
     int i = start;
     while (i < end) {
@@ -63,14 +61,22 @@ void set_rgb_range_blue(int start, int end) {
     }
 }
 
-void set_rgb_board_green(void) {
+void set_rgb_board_purple(void) {
     int i = 0;
     while (i < 9) {
         if (i == active_player_led_indices[target]) {
             rgb_matrix_set_color(i, 0xFF, 0xFF, 0x00);
         } else {
-            rgb_matrix_set_color(i, 0x00, 0xFF, 0x00);
+            rgb_matrix_set_color(i, 0xFF, 0x00, 0xFF);
         }
+        i++;
+    }
+}
+
+void set_rgb_board_yellow(void) {
+    int i = 0;
+    while (i < 9) {
+        rgb_matrix_set_color(i, 0xFF, 0xFF, 0x00);
         i++;
     }
 }
@@ -81,18 +87,31 @@ void party_size_check(int party_size_param) {
     } else {
         rgb_matrix_set_color(1, 0x00, 0x00, 0xFF);
     }
-    if (party_size_param < 8) {
+    if (target == 7) {
+        set_rgb_board_yellow();
+    } else if (party_size_param < 8) {
         set_rgb_range_blue(3, party_size_param + 2);
     } else {
-        set_rgb_board_green();
+        set_rgb_board_purple();
     }
 }
 
-void update_party_size (void) {
-    if (party_size == 8) {
-        party_size = 1;
+void update_party_size (bool add) {
+    if (add) {
+        if (party_size == 8) {
+            party_size = 1;
+        } else {
+            party_size++;
+        }
     } else {
-        party_size = party_size + 1;
+        if (party_size == 1) {
+            party_size = 8;
+        } else {
+            party_size--;
+            if (party_size - 1 <= target) {
+                target = party_size - 1;
+            }
+        }
     }
 }
 
@@ -102,24 +121,12 @@ void player_select (void) {
 
 void display_party_size (void) {
     #ifdef RGB_MATRIX_ENABLE
-//        selected_led_command = LED_PARTY_SIZE;
         rgb_matrix_indicators_kb();
     #endif
 }
 
 tap_hold_action_t tap_hold_actions[] = {
-    [0] = ACTION_TAP_HOLD(KC_END, KC_HOME),
-    [1] = ACTION_TAP_HOLD(UPDATE_PARTY_SIZE, DISPLAY_PARTY_SIZE)
-};
-
-uint16_t QK_TAP_HOLD_MACROS[] = {
-    [0] = UPDATE_PARTY_SIZE,
-    [1] = DISPLAY_PARTY_SIZE
-};
-
-func_type QK_TAP_HOLD_MACRO_FUNCTIONS[] = {
-    [0] = update_party_size,
-    [1] = display_party_size
+    [0] = ACTION_TAP_HOLD(KC_END, KC_HOME)
 };
 
 void matrix_scan_user(void) {
@@ -133,7 +140,67 @@ enum encoder_names {
 };
 uint8_t functionKeys[8] = {KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8};
 
+void clear_layers (void) {
+    layer_invert(1);
+    layer_invert(3);
+}
+
+void set_default_ffxiv_parameters(void) {
+    party_size = 1;
+    target = 0;
+    focus_target = -1;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case LAYER_SET_1: {
+            if (record->event.pressed) {
+                rgb_matrix_sethsv_noeeprom(HSV_CYAN);
+                layer_invert(1);
+                return true;
+            }
+        } break;
+        case LAYER_SET_3: {
+            if (record->event.pressed) {
+                rgb_matrix_sethsv_noeeprom(HSV_ORANGE);
+                set_default_ffxiv_parameters();
+                layer_invert(3);
+                return true;
+            }
+        } break;
+        case LAYER_SET_0: {
+            if (record->event.pressed) {
+                rgb_matrix_sethsv_noeeprom(0, 255, 255);
+                clear_layers();
+                return true;
+            }
+        } break;
+        case SET_FOCUS: {
+            if (record->event.pressed) {
+                if (focus_target == target) {
+                    focus_target = -1;
+                } else {
+                    focus_target = target;
+                    tap_code16(LS_F);
+                }
+                return true;
+            }
+        } break;
+        case SELECT_TARGET_PLAYER: {
+            if (record->event.pressed) {
+                tap_code(functionKeys[target]);
+                return true;
+            }
+        } break;
+        case SELECT_FOCUS: {
+            if (record->event.pressed) {
+                target = focus_target;
+                tap_code(KC_GRAVE);
+                return true;
+            }
+        } break;
+        default: break;
+    }
     process_record_tap_hold(keycode, record);
     return true;
 };
@@ -145,7 +212,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         | Media Previous    | Press: Play/Pause | Media Next         |
      */
     [0] = LAYOUT(
-        KC_MUTE, TG(1), TH(0),
+        LT(4, KC_MUTE), LAYER_SET_1, TH(0),
         RGB_MOD, KC_PGUP, KC_PGDN,
         KC_MPRV, KC_MPLY, KC_MNXT
     ),
@@ -155,25 +222,42 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         | Media Previous | End  | Media Next |
      */
     [1] = LAYOUT(
-        KC_F11, TG(2), TH(1),
-        KC_GRAVE, KC_END, KC_KP_PLUS,
-        KC_LEFT, LCTL(KC_END), KC_RGHT
+        KC_F11, LAYER_SET_3, LT(2, SELECT_TARGET_PLAYER),
+        SET_FOCUS, SELECT_FOCUS, KC_KP_PLUS,
+        KC_LEFT, KC_END, KC_RGHT
+    ),
+    [2] = LAYOUT(
+        _______, _______, _______,
+        _______, _______, _______,
+        _______, _______, _______
     ),
     /*
         | RESET          | Shift+CMD+B (Build VS Code) | Media Stop |
         | Held: Layer 2  | Home | RGB Mode   |
         | Media Previous | End  | Media Next |
     */
-    [2] = LAYOUT(
-        RESET, TO(0), KC_STOP,
+    [3] = LAYOUT(
+        RESET, LAYER_SET_0, KC_STOP,
         S(G(KC_G)), KC_HOME, RGB_MOD,
         KC_MPRV, KC_END, KC_MNXT
     ),
+    [4] = LAYOUT(
+        KC_MUTE, TG(1), TH(0),
+        RGB_MOD, KC_PGUP, KC_PGDN,
+        KC_MPRV, KC_MPLY, KC_MNXT
+    )
 };
 
 void left_rotary_encoder(bool clockwise) {
     uint8_t layer = get_highest_layer(layer_state);
     switch (layer) {
+        case 4:
+            if (clockwise) {
+                tap_code16(LS_F14);
+            } else {
+                tap_code16(LS_F13);
+            }
+            break;
         case 1:
             if (clockwise) {
                 tap_code(KC_TAB);
@@ -194,6 +278,13 @@ void left_rotary_encoder(bool clockwise) {
 void right_rotary_encoder(bool clockwise) {
     uint8_t layer = get_highest_layer(layer_state);
     switch (layer) {
+        case 2:
+            if (clockwise) {
+                update_party_size(true);
+            } else {
+                update_party_size(false);
+            }
+            break;
         case 1:
             if (clockwise) {
                 target = target + 1;
@@ -229,4 +320,18 @@ void encoder_update_user(uint8_t index, bool clockwise) {
 
 void rgb_matrix_indicators_kb(void) {
         party_size_check(party_size);
+}
+
+void keyboard_post_init_user(void) {
+        rgb_matrix_mode(RGB_MATRIX_BAND_SAT);
+}
+
+void suspend_power_down_kb(void) {
+    rgb_matrix_set_suspend_state(true);
+    suspend_power_down_user();
+}
+
+void suspend_wakeup_init_kb(void) {
+    rgb_matrix_set_suspend_state(false);
+    suspend_wakeup_init_user();
 }

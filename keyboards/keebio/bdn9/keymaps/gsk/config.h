@@ -6,6 +6,8 @@
 #endif
 /* For USB nonsense in various OSs */
 #define TAP_CODE_DELAY 10
+#define RGB_DISABLE_WHEN_USB_SUSPENDED true
+#define RGB_DISABLE_TIMEOUT (1000 * 60 * 3)
 
 /* For constant mouse speed */
 #define MOUSEKEY_DELAY 300
